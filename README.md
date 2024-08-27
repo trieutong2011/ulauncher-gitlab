@@ -37,7 +37,7 @@ pip3 install -r requirements.txt
 
 Open ulauncher preferences window -> extensions -> add extension and paste the following url:
 
-```<%= https://github.com/brpaz/ulauncher-gitlab %>```
+```<%= https://github.com/trieutong2011/ulauncher-gitlab %>```
 
 ## Usage
 
