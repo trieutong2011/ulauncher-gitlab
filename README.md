@@ -32,7 +32,7 @@ First install all the Python depdendencies needed by this extension:
 
 ```sh
 sudo apt install python3-pip
-pip3 install "python-gitlab >=1.5.1,<2.0.0"
+pip3 install -r requirements.txt
 ```
 
 Open ulauncher preferences window -> extensions -> add extension and paste the following url:
