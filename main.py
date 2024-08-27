@@ -13,7 +13,7 @@ from ulauncher.api.shared.action.RenderResultListAction import \
     RenderResultListAction
 from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
 from ulauncher.api.shared.event import (KeywordQueryEvent, PreferencesEvent,
-                                        PreferencesUpdateEvent)
+                                        PreferencesUpdateEvent, ItemEnterEvent)
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 
 LOGGER = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ PROJECTS_SEARCH_TYPE_STARRED = "STARRED"
 
 class GitLabExtension(Extension):
     """Main extension class."""
+
     def __init__(self):
         """init method."""
         LOGGER.info("Initializing GitLab Extension")
@@ -36,6 +37,7 @@ class GitLabExtension(Extension):
 
         # Event listeners
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
+        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
         self.subscribe(PreferencesEvent, PreferencesEventListener())
         self.subscribe(PreferencesUpdateEvent,
                        PreferencesUpdateEventListener())
@@ -48,68 +50,43 @@ class GitLabExtension(Extension):
         menu = [
             ExtensionResultItem(
                 icon="images/icon.png",
-                name="My",
-                description=
-                "Your personal menu with shortcuts for your Issues, Merge Requests and more",
+                name="Overview",
+                description="",
                 highlightable=False,
-                on_enter=SetUserQueryAction("%s my" % keyword),
+                on_enter=SetUserQueryAction("%s overview" % keyword),
             ),
             ExtensionResultItem(
                 icon="images/icon.png",
-                name="Project Search",
-                description=
-                "Search public projects in the entire GitLab platform",
+                name="Pipelines",
+                description="List running pipelines",
                 highlightable=False,
-                on_enter=SetUserQueryAction("%s search " % keyword),
+                on_enter=SetUserQueryAction("%s pipelines " % keyword),
             ),
             ExtensionResultItem(
                 icon="images/icon.png",
-                name="My Projects",
-                description="List the projects you are a member of",
+                name="Merge Requests",
+                description="List opened merge request",
                 highlightable=False,
-                on_enter=SetUserQueryAction("%s projects " % keyword),
+                on_enter=SetUserQueryAction("%s mr" % keyword),
             ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="My Projects (Starred)",
-                description="List your starred projects",
-                highlightable=False,
-                on_enter=SetUserQueryAction("%s starred " % keyword),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="My Groups",
-                description="List the groups you belong",
-                highlightable=False,
-                on_enter=SetUserQueryAction("%s groups " % keyword),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="GitLab Website",
-                description="Opens the GitLab website",
-                highlightable=False,
-                on_enter=OpenUrlAction(self.gitlab.url),
-                on_alt_enter=CopyToClipboardAction(self.gitlab.url),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="GitLab Status",
-                description="Opens the GitLab status page",
-                highlightable=False,
-                on_enter=OpenUrlAction("https://status.gitlab.com"),
-                on_alt_enter=CopyToClipboardAction(
-                    "https://status.gitlab.com"),
-            ),
+            # ExtensionResultItem(
+            #     icon="images/icon.png",
+            #     name="Projects (Starred)",
+            #     description="List your starred projects",
+            #     highlightable=False,
+            #     on_enter=SetUserQueryAction("%s starred " % keyword),
+            # ),
         ]
 
         return RenderResultListAction(menu)
 
-    def show_my_menu(self, query):
-        """Show "My" Menu with links for Profile.
+    def show_overview_menu(self, query):
+        """Show "Overview" Menu.
 
-        Todos, PRs etc
+        Groups, Starred, etc
         """
 
+        keyword = self.preferences["kw"]
         gitlab_url = self.preferences["url"]
 
         # Authenticate the user, if its not already authenticated.
@@ -120,75 +97,73 @@ class GitLabExtension(Extension):
         items = [
             ExtensionResultItem(
                 icon="images/icon.png",
-                name="Logged in as %s" % self.current_user.username,
-                description='Open "Profile" page in Gitlab',
+                name="Gitlab",
+                description='Open gitlab',
                 highlightable=False,
-                on_enter=OpenUrlAction("%s/profile" % gitlab_url),
-                on_alt_enter=CopyToClipboardAction("%s/profile" % gitlab_url),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="My Projects",
-                description='Open "Projects" page in Gitlab',
-                highlightable=False,
-                on_enter=OpenUrlAction("%s/dashboard/projects" % gitlab_url),
-                on_alt_enter=CopyToClipboardAction("%s/dashboard/projects" %
-                                                   gitlab_url),
+                on_enter=OpenUrlAction(
+                    "%s" % (gitlab_url)),
             ),
             ExtensionResultItem(
                 icon="images/icon.png",
                 name="My Groups",
-                description='Open "Groups" page on GitLab',
+                description="List the groups you belong",
                 highlightable=False,
-                on_enter=OpenUrlAction("%s/dashboard/groups" % gitlab_url),
+                on_enter=SetUserQueryAction("%s groups " % keyword),
                 on_alt_enter=CopyToClipboardAction("%s/dashboard/groups" %
                                                    gitlab_url),
             ),
             ExtensionResultItem(
                 icon="images/icon.png",
-                name="My Snippets",
-                description='Open "Snippets" page on GitLab',
+                name="My Access Tokens",
+                description='Open "Access Tokens" page',
                 highlightable=False,
-                on_enter=OpenUrlAction("%s/dashboard/snippets" % gitlab_url),
-                on_alt_enter=OpenUrlAction("%s/dashboard/snippets" %
-                                           gitlab_url),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="My Todos",
-                description='Open "Todos" page on GitLab',
-                highlightable=False,
-                on_enter=OpenUrlAction("%s/dashboard/todos" % gitlab_url),
-                on_alt_enter=CopyToClipboardAction("%s/dashboard/todos" %
-                                                   gitlab_url),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="My Issues",
-                description='Open "Issues" page on GitLab',
-                highlightable=False,
-                on_enter=OpenUrlAction("%s/dashboard/issues?assignee_id=%s" %
-                                       (gitlab_url, self.current_user.id)),
-                on_alt_enter=CopyToClipboardAction(
-                    "%s/dashboard/issues?assignee_id=%s" %
-                    (gitlab_url, self.current_user.id)),
-            ),
-            ExtensionResultItem(
-                icon="images/icon.png",
-                name="My Merge Requests",
-                description='Open "Merge Requests" page on GitLab',
-                highlightable=False,
-                on_enter=OpenUrlAction(
-                    "%s/dashboard/merge_requests?assignee_id=%s" %
-                    (gitlab_url, self.current_user.id)),
-                on_alt_enter=CopyToClipboardAction(
-                    "%s/dashboard/merge_requests?assignee_id=%s" %
-                    (gitlab_url, self.current_user.id)),
+                on_enter=OpenUrlAction("%s/-/user_settings/personal_access_tokens" % (gitlab_url)),
             ),
         ]
 
         if query:
             items = [p for p in items if query.lower() in p.get_name().lower()]
+
+        return RenderResultListAction(items)
+
+    def search_projects_for_pipeline(self, query):
+        """Search projects in GitLab."""
+
+        projects = self.gitlab.projects.list(
+            search=query,
+            membership=1,
+            order_by="name",
+            sort="asc",
+            simple=1,
+            page=1,
+            per_page=10,
+        )
+
+        if not projects:
+            return RenderResultListAction([
+                ExtensionResultItem(
+                    icon="images/icon.png",
+                    name="No projects found matching your search criteria",
+                    highlightable=False,
+                    on_enter=HideWindowAction(),
+                )
+            ])
+
+        items = []
+        for project in projects:
+            if project.description is not None:
+                description = project.description
+            else:
+                description = ""
+
+            items.append(
+                ExtensionResultItem(
+                    icon="images/icon.png",
+                    name=project.name,
+                    description=description,
+                    highlightable=False,
+                    on_enter=ExtensionCustomAction(project, keep_app_open=True),
+                ))
 
         return RenderResultListAction(items)
 
@@ -294,9 +269,51 @@ class GitLabExtension(Extension):
         return RenderResultListAction(items)
 
 
+class ItemEnterEventListener(EventListener):
+
+    def on_event(self, event, extension):
+        # event is instance of ItemEnterEvent
+
+        data = event.get_data()
+        # do additional actions here...
+
+        items = []
+        pipelines = data.pipelines.list(order_by='updated_at', status='running')
+
+        if not pipelines:
+            return RenderResultListAction([
+                ExtensionResultItem(
+                    icon="images/icon.png",
+                    name="No pipelines found",
+                    highlightable=False,
+                    on_enter=HideWindowAction(),
+                )
+            ])
+
+        for pipeline in pipelines:
+            if pipeline.name is not None:
+                description = pipeline.name
+            else:
+                description = ""
+
+            items.append(
+                ExtensionResultItem(
+                    icon="images/icon.png",
+                    name=f"{pipeline.source}/{pipeline.ref}",
+                    description=description,
+                    highlightable=False,
+                    on_enter=OpenUrlAction(pipeline.web_url),
+                    on_alt_enter=CopyToClipboardAction(pipeline.web_url),
+                ))
+
+        return RenderResultListAction(items)
+
 # # pylint: disable=too-many-return-statements
+
+
 class KeywordQueryEventListener(EventListener):
     """Handles Keyboard input."""
+
     def on_event(self, event, extension):
         """Handles the event."""
 
@@ -306,30 +323,33 @@ class KeywordQueryEventListener(EventListener):
             return extension.show_menu()
 
         # Get the action based on the search terms
-        search = re.findall(r"^search(.*)?$", query, re.IGNORECASE)
+        overview = re.findall(r"^overview(.*)?$", query, re.IGNORECASE)
+        pipelines = re.findall(r"^pipelines(.*)?$", query, re.IGNORECASE)
+        merge_requests = re.findall(r"^mr(.*)?$", query, re.IGNORECASE)
         repos = re.findall(r"^projects(.*)?$", query, re.IGNORECASE)
         groups = re.findall(r"^groups(.*)?$", query, re.IGNORECASE)
-        starred = re.findall(r"^starred(.*)?$", query, re.IGNORECASE)
-        account = re.findall(r"^my(.*)?$", query, re.IGNORECASE)
+        # starred = re.findall(r"^starred(.*)?$", query, re.IGNORECASE)
 
         try:
-            if account:
-                return extension.show_my_menu(account[0])
-
-            if search:
-                return extension.search_projects(search[0],
-                                                 PROJECTS_SEARCH_TYPE_PUBLIC)
+            if overview:
+                return extension.show_overview_menu(overview[0])
 
             if repos:
                 return extension.search_projects(repos[0],
                                                  PROJECTS_SEARCH_TYPE_MEMBER)
 
-            if starred:
-                return extension.search_projects(starred[0],
-                                                 PROJECTS_SEARCH_TYPE_STARRED)
+            if pipelines:
+                return extension.search_projects_for_pipeline(pipelines[0])
+
+            if merge_requests:
+                return extension.list_merge_requests(merge_requests[0])
 
             if groups:
                 return extension.list_groups(groups[0])
+
+            # if starred:
+            #     return extension.search_projects(starred[0],
+            #                                      PROJECTS_SEARCH_TYPE_STARRED)
 
             return extension.search_projects(query,
                                              PROJECTS_SEARCH_TYPE_MEMBER)
@@ -353,6 +373,7 @@ class PreferencesEventListener(EventListener):
     It is triggered on the extension start with the configured
     preferences
     """
+
     def on_event(self, event, extension):
         """Initializes the GitLab client."""
         extension.gitlab = gitlab.Gitlab(
@@ -374,6 +395,7 @@ class PreferencesUpdateEventListener(EventListener):
     It is triggered when the user changes any setting in preferences
     window
     """
+
     def on_event(self, event, extension):
         if event.id == "url":
             extension.gitlab.url = event.new_value

@@ -1,1 +1,2 @@
-python-gitlab >=1.5.1,<2.0.0
+python-gitlab == v4.9.0
+#python-gitlab
